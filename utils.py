@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def normalize(X, axis=-1, order=2):
-    """ Normalize the dataset X """
-    l2 = np.atleast_1d(np.linalg.norm(X, order, axis))
-    l2[l2 == 0] = 1
-    return X / np.expand_dims(l2, axis)
+# def normalize(X, axis=-1, order=2):
+#     """ Normalize the dataset X """
+#     l2 = np.atleast_1d(np.linalg.norm(X, order, axis))
+#     l2[l2 == 0] = 1
+#     return X / np.expand_dims(l2, axis)
 
 
 def to_categorical(x, n_col=None):
@@ -27,7 +27,7 @@ class CrossEntropy:
 
     def loss(self, y, p):
         # Avoid division by zero
-        # p = np.clip(p, 1e-15, 1 - 1e-15)
+        p = np.clip(p, 1e-15, 1 - 1e-15)
         return - y * np.log(p) - (1 - y) * np.log(1 - p)
 
     def acc(self, y, p):
@@ -36,7 +36,7 @@ class CrossEntropy:
     def gradient(self, y, p):
         # Avoid division by zero
         p = np.clip(p, 1e-15, 1 - 1e-15)
-        return - (y / p) + (1 - y) / (1 - p)
+        return - (y / p) + 0.1 + (1 - y) / (1 - p) +0.001
 
 
 class Sigmoid:
@@ -55,3 +55,17 @@ class Softmax:
     def gradient(self, x):
         p = self.__call__(x)
         return p * (1 - p)
+
+
+def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
+    assert inputs.shape[0] == targets.shape[0]
+    if shuffle:
+        indices = np.arange(inputs.shape[0])
+        np.random.shuffle(indices)
+    for start_idx in range(0, inputs.shape[0] - batchsize + 1, batchsize):
+        end_idx = min(start_idx + batchsize, inputs.shape[0])
+        if shuffle:
+            excerpt = indices[start_idx:end_idx]
+        else:
+            excerpt = slice(start_idx, end_idx)
+        yield inputs[excerpt], targets[excerpt]
